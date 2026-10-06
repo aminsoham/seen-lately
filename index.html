@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Track and plan how often you see friends and family: drag names onto a monthly calendar, note what you did, set goals, and plan around holidays.">
+<meta name="theme-color" content="#F3F6F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111917" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%231E5C54%22%2F%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%2213%22%20r%3D%224.5%22%20fill%3D%22%23F3F6F4%22%2F%3E%3Ccircle%20cx%3D%2221%22%20cy%3D%2213%22%20r%3D%224.5%22%20fill%3D%22%237CCBBB%22%2F%3E%3Cpath%20d%3D%22M5%2025c1.5-4%204-6%207-6s4%201%204%201%201-1%204-1%205.5%202%207%206%22%20fill%3D%22none%22%20stroke%3D%22%23F3F6F4%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<title>Seen Lately</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Young+Serif&display=swap">
+<style>
+/* Layout: people in a fixed left column, the month grid fills the rest. On phones the people become
+   a horizontal rail pinned above the grid (tap a name, tap a day) and the cards move below it. */
+:root {
+  --paper: #F3F6F4; --card: #FFFFFF; --card-2: #E9EFEC;
+  --ink: #182522; --ink-2: #5B6D69; --ink-3: #8C9B97;
+  --line: #D4DDD8; --line-2: #E6ECE9;
+  --accent: #1E5C54; --accent-ink: #FFFFFF; --accent-soft: #DCEBE6;
+  --good: #2F7A4D; --warn: #A2650C; --bad: #B33B3B;
+  --good-soft: #DFF0E5; --warn-soft: #F7EBD2; --bad-soft: #F6DFDF;
+  --chip-bg-l: 93%; --chip-bg-c: 0.05; --chip-fg-l: 34%; --chip-fg-c: 0.11;
+  --chip-bd-l: 84%; --chip-bd-c: 0.08; --dot-l: 62%; --dot-c: 0.16;
+  --backdrop: rgb(16 30 27 / .45);
+  --shadow: 0 14px 34px -14px rgb(20 40 36 / .28);
+  --font-display: 'Young Serif', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Figtree', 'Avenir Next', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111917; --card: #19221F; --card-2: #202B28;
+    --ink: #E5ECE9; --ink-2: #9DADA8; --ink-3: #6F807B;
+    --line: #2B3733; --line-2: #232E2B;
+    --accent: #7CCBBB; --accent-ink: #0E1A17; --accent-soft: #1B3430;
+    --good: #6FCB91; --warn: #E0B35B; --bad: #EE8A8A;
+    --good-soft: #193426; --warn-soft: #3A2E14; --bad-soft: #3B1E1E;
+    --chip-bg-l: 30%; --chip-bg-c: 0.06; --chip-fg-l: 90%; --chip-fg-c: 0.07;
+    --chip-bd-l: 40%; --chip-bd-c: 0.08; --dot-l: 70%; --dot-c: 0.15;
+    --backdrop: rgb(0 0 0 / .6);
+    --shadow: 0 14px 34px -14px rgb(0 0 0 / .7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111917; --card: #19221F; --card-2: #202B28;
+  --ink: #E5ECE9; --ink-2: #9DADA8; --ink-3: #6F807B;
+  --line: #2B3733; --line-2: #232E2B;
+  --accent: #7CCBBB; --accent-ink: #0E1A17; --accent-soft: #1B3430;
+  --good: #6FCB91; --warn: #E0B35B; --bad: #EE8A8A;
+  --good-soft: #193426; --warn-soft: #3A2E14; --bad-soft: #3B1E1E;
+  --chip-bg-l: 30%; --chip-bg-c: 0.06; --chip-fg-l: 90%; --chip-fg-c: 0.07;
+  --chip-bd-l: 40%; --chip-bd-c: 0.08; --dot-l: 70%; --dot-c: 0.15;
+  --backdrop: rgb(0 0 0 / .6);
+  --shadow: 0 14px 34px -14px rgb(0 0 0 / .7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 15px/1.45 var(--font-body);
+  padding-inline: 16px; padding-block: 0 72px;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Header */
+.top {
+  max-width: 1400px; margin-inline: auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+  padding-block: 20px 16px;
+}
+.brand h1 { font-size: 28px; line-height: 1.1; }
+.brand .tag { margin-top: 3px; color: var(--ink-2); font-size: 13.5px; }
+.monthnav { display: flex; align-items: center; gap: 6px; margin-inline: auto; }
+.monthnav h2 { font-size: 23px; min-width: 10.5ch; text-align: center; font-variant-numeric: tabular-nums; }
+.tools { display: flex; align-items: center; gap: 14px; }
+.status { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.status.ok::before { background: var(--good); }
+.status.saving::before { background: var(--warn); }
+.status.error::before { background: var(--bad); }
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; line-height: 1.2;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: var(--card-2); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover { background: var(--card-2); }
+.btn.danger { color: var(--bad); border-color: color-mix(in oklab, var(--bad) 35%, var(--line)); }
+.btn.danger.armed { background: var(--bad); color: #fff; border-color: var(--bad); }
+.btn.sm { padding: 5px 10px; font-size: 12.5px; }
+.iconbtn { width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 20px; line-height: 1; }
+
+/* Holidays menu */
+.menu { position: relative; }
+.menu summary { list-style: none; }
+.menu summary::-webkit-details-marker { display: none; }
+.menu-body {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 250px;
+  box-shadow: var(--shadow); font-size: 13px;
+}
+.menu-body label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.menu-body input { accent-color: var(--accent); }
+
+/* Layout */
+.layout {
+  display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start;
+  max-width: 1400px; margin-inline: auto;
+}
+.side { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-width: thin; }
+.main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.panel-head h2 { font-size: 19px; }
+.legend { font-size: 12px; color: var(--ink-3); }
+.how { font-size: 12.5px; color: var(--ink-2); margin-top: 14px; line-height: 1.5; }
+.banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between;
+  background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; font-size: 13px;
+}
+.empty { color: var(--ink-2); font-size: 14px; line-height: 1.5; padding: 6px 0 2px; }
+.empty strong { color: var(--ink); }
+
+/* People cards */
+.people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.person {
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--card);
+  display: flex; flex-direction: column; gap: 8px; cursor: grab; user-select: none;
+  transition: box-shadow .12s, border-color .12s;
+}
+.person:hover { border-color: oklch(var(--dot-l) var(--dot-c) var(--h)); }
+.person:active { cursor: grabbing; }
+.person.selected { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent); }
+.person.dragging { opacity: .45; }
+.p-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: oklch(var(--dot-l) var(--dot-c) var(--h)); flex: none; display: inline-block; }
+.p-name { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--card-2); color: var(--ink-2); white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.bar { display: flex; gap: 3px; height: 6px; }
+.bar i { flex: 1; border-radius: 3px; background: var(--line); }
+.bar i.on { background: var(--accent); }
+.bar.met i.on { background: var(--good); }
+.bar.cont { background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar.cont i { flex: none; width: var(--w); border-radius: 0; }
+.p-meta { font-size: 12px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 2px 10px; font-variant-numeric: tabular-nums; }
+
+/* Mobile rail */
+.rail { display: none; }
+
+/* Calendar */
+.cal { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.cal-head { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--line); background: var(--card-2); }
+.cal-head div { padding: 8px 10px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.day {
+  min-height: 116px; padding: 8px; min-width: 0; position: relative;
+  border-right: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: background .12s, box-shadow .12s;
+}
+.day:nth-child(7n) { border-right: 0; }
+.day:nth-last-child(-n+7) { border-bottom: 0; }
+.day.weekend { background: color-mix(in oklab, var(--card-2) 30%, var(--card)); }
+.day.other { background: color-mix(in oklab, var(--card-2) 60%, var(--card)); }
+.day.other .num, .day.other .hol { color: var(--ink-3); }
+.day.placing { cursor: copy; }
+.day.placing:hover, .day.over { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.d-top { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.num {
+  font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px;
+  width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: 50%; flex: none;
+}
+.day.today .num { background: var(--accent); color: var(--accent-ink); }
+.hols { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; padding-top: 4px; }
+.hol { font-size: 11px; color: var(--ink-2); font-style: italic; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.holdot { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.chips { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.chip {
+  --bg: oklch(var(--chip-bg-l) var(--chip-bg-c) var(--h));
+  --fg: oklch(var(--chip-fg-l) var(--chip-fg-c) var(--h));
+  --bd: oklch(var(--chip-bd-l) var(--chip-bd-c) var(--h));
+  display: flex; align-items: center; gap: 6px; text-align: left; min-width: 0;
+  background: var(--bg); color: var(--fg); border: 1px solid var(--bd); border-radius: 7px;
+  padding: 3px 8px; font-size: 12.5px; font-weight: 600; line-height: 1.35; cursor: grab; user-select: none;
+}
+.chip:hover { filter: brightness(.97); }
+.chip:active { cursor: grabbing; }
+.chip .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 100%; }
+.chip .note { font-weight: 400; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+.chip .ini { display: none; }
+.chip.planned { background: color-mix(in oklab, var(--bg) 35%, var(--card)); border-style: dashed; }
+.chip.dragging { opacity: .4; }
+.hollist { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; padding-inline: 4px; }
+.hollist b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.hollist .sep { color: var(--ink-3); margin-inline: 6px; }
+
+/* Year tally */
+.tally-wrap { overflow-x: auto; }
+table.tally { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
+.tally th, .tally td { padding: 7px 6px; text-align: center; border-bottom: 1px solid var(--line-2); }
+.tally th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.tally tbody tr:last-child td { border-bottom: 0; }
+.tally td:first-child, .tally th:first-child { text-align: left; white-space: nowrap; }
+.tally td:first-child .dot { margin-right: 8px; vertical-align: 1px; }
+.tally td.n { background: oklch(var(--chip-bg-l) var(--chip-bg-c) var(--h) / var(--a)); color: oklch(var(--chip-fg-l) var(--chip-fg-c) var(--h)); font-weight: 600; }
+.tally td.n:empty { background: transparent; }
+.tally td small { color: var(--ink-3); font-weight: 400; margin-left: 2px; }
+.tally .cur { box-shadow: inset 0 -2px 0 var(--accent); }
+.tally td.tot { font-weight: 700; }
+.tally td.goal { color: var(--ink-2); }
+
+/* Hint + toast */
+.hint, .toast {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 50;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 12px; font-size: 13.5px; box-shadow: var(--shadow);
+}
+.hint { background: var(--ink); color: var(--paper); padding: 8px 8px 8px 14px; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); }
+.hint .btn { background: transparent; color: inherit; border-color: color-mix(in oklab, currentColor 40%, transparent); }
+.toast { background: var(--ink); color: var(--paper); padding: 10px 14px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast.show { opacity: 1; }
+
+/* Dialogs */
+dialog {
+  border: 0; border-radius: 16px; padding: 0; background: var(--card); color: var(--ink);
+  box-shadow: var(--shadow); width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px);
+}
+dialog::backdrop { background: var(--backdrop); }
+dialog form { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+dialog h3 { font-size: 21px; }
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); min-width: 0; }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--paper); color: var(--ink);
+  font-weight: 400; font-size: 15px; width: 100%;
+}
+.field textarea { min-height: 88px; resize: vertical; line-height: 1.45; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+.row .narrow { flex: 0 0 90px; }
+.goalrow { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: end; }
+.actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 2px; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; background: oklch(var(--dot-l) var(--dot-c) var(--h)); padding: 0; }
+.swatch[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 2px var(--card); }
+.fine { font-size: 12px; color: var(--ink-3); font-weight: 400; }
+
+/* Phones and narrow windows */
+@media (max-width: 900px) {
+  .top { padding-block: 16px 10px; }
+  .brand h1 { font-size: 24px; }
+  .brand .tag { display: none; }
+  .monthnav { margin-inline: 0; order: 3; width: 100%; justify-content: center; }
+  .monthnav h2 { font-size: 20px; }
+  .tools { margin-left: auto; }
+  .layout { grid-template-columns: 1fr; gap: 20px; }
+  .side { position: static; max-height: none; overflow: visible; order: 2; }
+  .main { order: 1; }
+  .rail {
+    display: flex; gap: 8px; overflow-x: auto; align-items: center;
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+    background: var(--paper); padding-block: 8px; scrollbar-width: none;
+    margin-inline: -16px; padding-inline: 16px;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .railchip {
+    --bg: oklch(var(--chip-bg-l) var(--chip-bg-c) var(--h));
+    --fg: oklch(var(--chip-fg-l) var(--chip-fg-c) var(--h));
+    --bd: oklch(var(--chip-bd-l) var(--chip-bd-c) var(--h));
+    flex: none; background: var(--bg); color: var(--fg); border: 1px solid var(--bd);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; user-select: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .railchip.selected { box-shadow: 0 0 0 2px var(--accent); }
+  .railchip .dot { width: 8px; height: 8px; }
+  .cal-head div { padding: 6px 4px; font-size: 10px; text-align: center; }
+  .day { min-height: 78px; padding: 5px 4px; gap: 4px; }
+  .d-top { gap: 4px; }
+  .num { width: 22px; height: 22px; font-size: 12px; }
+  .hols { display: none; }
+  .holdot { display: inline-block; }
+  .chip { padding: 2px 4px; font-size: 11px; justify-content: center; border-radius: 6px; }
+  .chip .name, .chip .note { display: none; }
+  .chip .ini { display: inline; }
+  .goalrow { grid-template-columns: 80px 1fr; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Seen Lately</h1>
+    <p class="tag">Who you've seen, and who you're due to see.</p>
+  </div>
+  <nav class="monthnav" aria-label="Month">
+    <button class="btn iconbtn" id="prevMonth" type="button" aria-label="Previous month">&#8249;</button>
+    <h2 id="monthTitle">&nbsp;</h2>
+    <button class="btn iconbtn" id="nextMonth" type="button" aria-label="Next month">&#8250;</button>
+    <button class="btn sm" id="todayBtn" type="button">Today</button>
+  </nav>
+  <div class="tools">
+    <details class="menu" id="holMenu">
+      <summary class="btn sm">Holidays</summary>
+      <div class="menu-body">
+        <label><input type="checkbox" id="holFederal" data-group="federal" checked> US federal holidays</label>
+        <label><input type="checkbox" id="holObservances" data-group="observances" checked> Observances (Valentine's, Mother's Day, Halloween…)</label>
+        <label><input type="checkbox" id="holCultural" data-group="cultural" checked> Cultural &amp; religious (Lunar New Year, Diwali, Eid, Passover…)</label>
+      </div>
+    </details>
+    <span class="status" id="status">Loading…</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <section class="panel" id="peoplePanel">
+      <div class="panel-head">
+        <h2>People</h2>
+        <button class="btn sm primary" id="addPerson" type="button">+ Add person</button>
+      </div>
+      <div class="banner" id="examplesBanner" hidden>
+        <span id="examplesText"></span>
+        <button class="btn sm" id="removeExamples" type="button">Remove examples</button>
+      </div>
+      <ul class="people" id="peopleList"></ul>
+      <p class="how" id="howText">Drag a name onto the day you saw them, or tap a name and then tap a day. Tap any entry on the calendar to note what you did.</p>
+    </section>
+  </aside>
+
+  <section class="main">
+    <div class="rail" id="rail"></div>
+    <div class="cal">
+      <div class="cal-head" aria-hidden="true">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <p class="hollist" id="holList"></p>
+    <section class="panel" id="tallyPanel">
+      <div class="panel-head">
+        <h2 id="tallyTitle">&nbsp;</h2>
+        <span class="legend">Counts are hangouts that happened; +n are planned.</span>
+      </div>
+      <div class="tally-wrap"><table class="tally" id="tally"></table></div>
+    </section>
+  </section>
+</div>
+
+<div class="hint" id="hint" hidden>
+  <span id="hintText"></span>
+  <button class="btn sm" id="hintDone" type="button">Done</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="hangoutDialog">
+  <form id="hangoutForm" novalidate>
+    <h3 id="hangoutTitle">Log a hangout</h3>
+    <div class="row">
+      <label class="field">Who
+        <select id="hPerson"></select>
+      </label>
+      <label class="field">When
+        <input type="date" id="hDate" required>
+      </label>
+    </div>
+    <label class="field">What did you do?
+      <textarea id="hNote" placeholder="Dinner at the new Thai place, then a long walk…"></textarea>
+    </label>
+    <div class="actions">
+      <button type="button" class="btn danger" id="hDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="hCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="hSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="personDialog">
+  <form id="personForm" novalidate>
+    <h3 id="personTitle">Add a person</h3>
+    <label class="field">Name
+      <input type="text" id="pName" placeholder="Priya, Dad, the Chens…" maxlength="40" autocomplete="off" required>
+    </label>
+    <div class="field">Color
+      <div class="swatches" id="swatches" role="radiogroup" aria-label="Color"></div>
+    </div>
+    <div class="field">How often do you want to see them?
+      <div class="goalrow">
+        <input type="number" id="pCount" min="1" max="60" step="1" value="2" aria-label="Times">
+        <select id="pPeriod" aria-label="Per">
+          <option value="week">times a week</option>
+          <option value="month" selected>times a month</option>
+          <option value="quarter">times a quarter</option>
+          <option value="year">times a year</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn danger" id="pDelete">Delete</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" id="pCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="pSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- helpers ----------
+const $ = (s, el = document) => el.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const todayISO = () => iso(new Date());
+const dayDiff = (a, b) => Math.round((fromISO(b) - fromISO(a)) / 864e5);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MON = MONTHS.map(m => m.slice(0, 3));
+const HUES = [25, 50, 85, 130, 165, 195, 230, 265, 295, 325, 355];
+const PERIOD_DAYS = { week: 7, month: 30.44, quarter: 91.31, year: 365.25 };
+const PERIOD_NAME = { week: 'this week', month: 'this month', quarter: 'this quarter', year: 'this year' };
+const fmtShort = s => { const d = fromISO(s); return `${MON[d.getMonth()]} ${d.getDate()}`; };
+const fmtLong = s => { const d = fromISO(s); return `${MONTHS[d.getMonth()]} ${d.getDate()}`; };
+const initials = name => (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+// ---------- holidays ----------
+function nthDow(y, m, dow, n) { const first = new Date(y, m, 1).getDay(); return iso(new Date(y, m, 1 + ((dow - first + 7) % 7) + (n - 1) * 7)); }
+function lastDow(y, m, dow) { const last = new Date(y, m + 1, 0); return iso(new Date(y, m, last.getDate() - ((last.getDay() - dow + 7) % 7))); }
+function easter(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+    h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+    month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return iso(new Date(y, month - 1, day));
+}
+const fixed = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+// Lunar-calendar dates can't be computed simply; these are table values (Jewish holidays begin at sundown on the date shown).
+const CULTURAL = {
+  'Lunar New Year':       { 2025: '01-29', 2026: '02-17', 2027: '02-06', 2028: '01-26' },
+  'Diwali':               { 2025: '10-20', 2026: '11-08', 2027: '10-29', 2028: '10-17' },
+  'Eid al-Fitr':          { 2025: '03-30', 2026: '03-20', 2027: '03-09', 2028: '02-26' },
+  'Eid al-Adha':          { 2025: '06-06', 2026: '05-27', 2027: '05-16', 2028: '05-05' },
+  'Passover begins':      { 2025: '04-12', 2026: '04-01', 2027: '04-21', 2028: '04-10' },
+  'Rosh Hashanah begins': { 2025: '09-22', 2026: '09-11', 2027: '10-01', 2028: '09-20' },
+  'Yom Kippur begins':    { 2025: '10-01', 2026: '09-20', 2027: '10-10', 2028: '09-29' },
+  'Hanukkah begins':      { 2025: '12-14', 2026: '12-04', 2027: '12-24', 2028: '12-12' },
+};
+function holidaysForYear(y) {
+  const list = [];
+  const add = (group, date, name) => list.push({ group, date, name });
+  add('federal', fixed(y, 1, 1), "New Year's Day");
+  add('federal', nthDow(y, 0, 1, 3), 'MLK Day');
+  add('observances', fixed(y, 2, 14), "Valentine's Day");
+  add('federal', nthDow(y, 1, 1, 3), "Presidents' Day");
+  add('observances', fixed(y, 3, 17), "St. Patrick's Day");
+  add('observances', easter(y), 'Easter');
+  add('observances', nthDow(y, 4, 0, 2), "Mother's Day");
+  add('federal', lastDow(y, 4, 1), 'Memorial Day');
+  add('observances', nthDow(y, 5, 0, 3), "Father's Day");
+  add('federal', fixed(y, 6, 19), 'Juneteenth');
+  add('federal', fixed(y, 7, 4), 'Independence Day');
+  add('federal', nthDow(y, 8, 1, 1), 'Labor Day');
+  add('federal', nthDow(y, 9, 1, 2), "Indigenous Peoples' Day");
+  add('observances', fixed(y, 10, 31), 'Halloween');
+  add('federal', fixed(y, 11, 11), 'Veterans Day');
+  add('federal', nthDow(y, 10, 4, 4), 'Thanksgiving');
+  add('observances', fixed(y, 12, 24), 'Christmas Eve');
+  add('federal', fixed(y, 12, 25), 'Christmas');
+  add('observances', fixed(y, 12, 31), "New Year's Eve");
+  for (const [name, byYear] of Object.entries(CULTURAL)) if (byYear[y]) add('cultural', `${y}-${byYear[y]}`, name);
+  return list;
+}
+function holidayMap(years) {
+  const map = new Map();
+  for (const y of years) for (const h of holidaysForYear(y)) {
+    if (!state.holidayPrefs[h.group]) continue;
+    if (!map.has(h.date)) map.set(h.date, []);
+    map.get(h.date).push(h.name);
+  }
+  return map;
+}
+
+// ---------- state ----------
+const now = new Date();
+const state = {
+  view: { y: now.getFullYear(), m: now.getMonth() },
+  people: new Map(),
+  hangouts: new Map(),
+  selectedPerson: null,
+  loaded: false,
+  holidayPrefs: { federal: true, observances: true, cultural: true },
+};
+const PREFS_KEY = 'seenlately.holidays.v1';
+try { const p = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null'); if (p && typeof p === 'object') Object.assign(state.holidayPrefs, p); } catch (e) {}
+
+// ---------- store (synced db when available, this browser otherwise) ----------
+const LS_KEY = 'seenlately.data.v1';
+const store = {
+  mode: 'loading', db: null,
+  async init() {
+    let db = null;
+    try { if (window.claude && typeof window.claude.use === 'function') db = await window.claude.use('db'); } catch (e) { db = null; }
+    if (db) {
+      this.mode = 'db'; this.db = db;
+      let gotP = false, gotH = false;
+      const done = () => { if (gotP && gotH) state.loaded = true; renderAll(); };
+      const onErr = e => { console.warn('db subscription error', e); setStatus('error', 'Sync problem'); };
+      db.collection('people').onSnapshot(snap => {
+        state.people = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data() }])); gotP = true; done();
+      }, onErr);
+      db.collection('hangouts').onSnapshot(snap => {
+        state.hangouts = new Map(snap.docs.map(d => [d.id, { id: d.id, ...d.data() }])); gotH = true; done();
+      }, onErr);
+      setStatus('ok', 'Synced');
+    } else {
+      this.mode = 'local';
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+          const j = JSON.parse(raw);
+          state.people = new Map(Object.entries(j.people || {}).map(([id, v]) => [id, { id, ...v }]));
+          state.hangouts = new Map(Object.entries(j.hangouts || {}).map(([id, v]) => [id, { id, ...v }]));
+        }
+      } catch (e) {}
+      state.loaded = true; setStatus('local', 'Saved on this device'); renderAll();
+    }
+  },
+  _persistLocal() {
+    try {
+      const strip = m => Object.fromEntries([...m.values()].map(({ id, ...v }) => [id, v]));
+      localStorage.setItem(LS_KEY, JSON.stringify({ people: strip(state.people), hangouts: strip(state.hangouts) }));
+    } catch (e) { toast("Couldn't save on this device"); }
+  },
+  async set(coll, id, data) {
+    (coll === 'people' ? state.people : state.hangouts).set(id, { id, ...data });
+    renderAll();
+    if (this.mode === 'db') {
+      try { setStatus('saving', 'Saving…'); await this.db.collection(coll).doc(id).set(data); setStatus('ok', 'Synced'); }
+      catch (e) { console.warn(e); setStatus('error', "Couldn't save"); toast("Couldn't save. Check your connection and try again."); }
+    } else this._persistLocal();
+  },
+  async del(coll, id) {
+    (coll === 'people' ? state.people : state.hangouts).delete(id);
+    renderAll();
+    if (this.mode === 'db') {
+      try { setStatus('saving', 'Saving…'); await this.db.collection(coll).doc(id).delete(); setStatus('ok', 'Synced'); }
+      catch (e) { console.warn(e); setStatus('error', "Couldn't save"); toast("Couldn't delete. Check your connection and try again."); }
+    } else this._persistLocal();
+  },
+};
+
+// ---------- derived data ----------
+function sortedPeople() { return [...state.people.values()].sort((a, b) => a.name.localeCompare(b.name)); }
+function periodRange(period, ref = new Date()) {
+  const y = ref.getFullYear(), m = ref.getMonth();
+  if (period === 'week') { const s = new Date(y, m, ref.getDate() - ref.getDay()); const e = new Date(y, m, ref.getDate() - ref.getDay() + 6); return [iso(s), iso(e)]; }
+  if (period === 'quarter') { const q = Math.floor(m / 3) * 3; return [iso(new Date(y, q, 1)), iso(new Date(y, q + 3, 0))]; }
+  if (period === 'year') return [`${y}-01-01`, `${y}-12-31`];
+  return [iso(new Date(y, m, 1)), iso(new Date(y, m + 1, 0))];
+}
+function statsFor(p) {
+  const today = todayISO();
+  const goal = Math.max(1, Number(p.goalCount) || 1);
+  const period = PERIOD_DAYS[p.goalPeriod] ? p.goalPeriod : 'month';
+  const past = [], planned = [];
+  for (const h of state.hangouts.values()) if (h.personId === p.id) (h.date <= today ? past : planned).push(h);
+  past.sort((a, b) => (a.date < b.date ? 1 : -1));
+  planned.sort((a, b) => (a.date < b.date ? -1 : 1));
+  const [ps, pe] = periodRange(period);
+  const inPeriod = past.filter(h => h.date >= ps && h.date <= pe).length;
+  const lastSeen = past[0]?.date ?? null;
+  const daysSince = lastSeen ? dayDiff(lastSeen, today) : null;
+  const gap = PERIOD_DAYS[period] / goal;
+  const met = inPeriod >= goal;
+  let status;
+  if (met) status = { k: 'good', label: 'Goal met' };
+  else if (!lastSeen) status = { k: 'neutral', label: 'Not logged yet' };
+  else if (daysSince > gap * 1.5) status = { k: 'bad', label: 'Overdue' };
+  else if (daysSince > gap) status = { k: 'warn', label: `${goal - inPeriod} to go` };
+  else status = { k: 'neutral', label: `${goal - inPeriod} to go` };
+  return { goal, period, inPeriod, met, lastSeen, daysSince, nextPlanned: planned[0]?.date ?? null, pastCount: past.length, plannedCount: planned.length, status };
+}
+
+// ---------- rendering ----------
+function setStatus(kind, text) { const el = $('#status'); el.className = 'status ' + kind; el.textContent = text; }
+let toastTimer;
+function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2800); }
+
+function renderAll() {
+  if (state.selectedPerson && !state.people.has(state.selectedPerson)) state.selectedPerson = null;
+  renderHeader(); renderPeople(); renderRail(); renderCalendar(); renderTally(); renderHint();
+}
+function renderHeader() {
+  $('#monthTitle').textContent = `${MONTHS[state.view.m]} ${state.view.y}`;
+  for (const cb of document.querySelectorAll('#holMenu input[data-group]')) cb.checked = !!state.holidayPrefs[cb.dataset.group];
+}
+function personCard(p) {
+  const s = statsFor(p);
+  const bar = s.goal <= 12
+    ? `<div class="bar ${s.met ? 'met' : ''}" aria-hidden="true">${Array.from({ length: s.goal }, (_, i) => `<i class="${i < s.inPeriod ? 'on' : ''}"></i>`).join('')}</div>`
+    : `<div class="bar cont ${s.met ? 'met' : ''}" aria-hidden="true"><i class="on" style="--w:${Math.min(100, 100 * s.inPeriod / s.goal)}%"></i></div>`;
+  const seen = s.lastSeen ? (s.daysSince === 0 ? 'Seen today' : s.daysSince === 1 ? 'Seen yesterday' : `Last seen ${s.daysSince} days ago`) : 'Not seen yet';
+  const meta = [`${s.inPeriod} of ${s.goal} ${PERIOD_NAME[s.period]}`, seen, s.nextPlanned ? `Next ${fmtShort(s.nextPlanned)}` : null].filter(Boolean);
+  const sel = state.selectedPerson === p.id;
+  return `<li class="person ${sel ? 'selected' : ''}" data-id="${esc(p.id)}" draggable="true" style="--h:${Number(p.hue) || 0}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(p.name)}. ${esc(s.status.label)}. ${esc(meta.join('. '))}. Press to select, then pick a day.">
+    <div class="p-head"><span class="dot"></span><span class="p-name">${esc(p.name)}</span><span class="pill ${s.status.k}">${esc(s.status.label)}</span><button class="btn sm ghost edit" type="button" aria-label="Edit ${esc(p.name)}">Edit</button></div>
+    ${bar}
+    <div class="p-meta">${meta.map(m => `<span>${esc(m)}</span>`).join('')}</div>
+  </li>`;
+}
+function renderPeople() {
+  const list = $('#peopleList');
+  const people = sortedPeople();
+  const examples = people.filter(p => p.example);
+  const banner = $('#examplesBanner');
+  banner.hidden = examples.length === 0;
+  if (examples.length) {
+    const names = examples.map(p => p.name);
+    const text = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names.at(-1) : names[0];
+    $('#examplesText').textContent = `${text} ${names.length > 1 ? 'are' : 'is an'} example${names.length > 1 ? 's' : ''} to show how this works.`;
+  }
+  if (!state.loaded) { list.innerHTML = `<li class="empty">Loading your people…</li>`; return; }
+  if (!people.length) {
+    list.innerHTML = `<li class="empty"><strong>Nobody here yet.</strong> Add the friends and family you want to keep up with, set how often you'd like to see each of them, then drag their name onto the day you got together.</li>`;
+    return;
+  }
+  list.innerHTML = people.map(personCard).join('');
+}
+function renderRail() {
+  const rail = $('#rail');
+  const people = sortedPeople();
+  rail.innerHTML = people.map(p => `<div class="railchip ${state.selectedPerson === p.id ? 'selected' : ''}" data-id="${esc(p.id)}" draggable="true" style="--h:${Number(p.hue) || 0}" role="button" tabindex="0" aria-pressed="${state.selectedPerson === p.id}"><span class="dot"></span>${esc(p.name)}</div>`).join('')
+    + `<button class="btn sm" id="railAdd" type="button">+ Add</button>`;
+}
+function renderCalendar() {
+  const { y, m } = state.view;
+  const today = todayISO();
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const rows = Math.ceil((startDow + daysInMonth) / 7);
+  const hols = holidayMap([y - 1, y, y + 1]);
+  const byDate = new Map();
+  for (const h of state.hangouts.values()) { if (!byDate.has(h.date)) byDate.set(h.date, []); byDate.get(h.date).push(h); }
+  const placing = !!state.selectedPerson;
+  let html = '';
+  for (let i = 0; i < rows * 7; i++) {
+    const d = new Date(y, m, 1 - startDow + i);
+    const ds = iso(d);
+    const other = d.getMonth() !== m;
+    const dow = d.getDay();
+    const names = hols.get(ds) || [];
+    const items = (byDate.get(ds) || []).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const chips = items.map(h => {
+      const p = state.people.get(h.personId);
+      if (!p) return '';
+      const plannedCls = h.date > today ? 'planned' : '';
+      const title = `${p.name} · ${fmtLong(h.date)}${h.note ? ' · ' + h.note : ''}`;
+      return `<div class="chip ${plannedCls}" data-id="${esc(h.id)}" draggable="true" style="--h:${Number(p.hue) || 0}" role="button" tabindex="0" title="${esc(title)}"><span class="ini">${esc(initials(p.name))}</span><span class="name">${esc(p.name)}</span>${h.note ? `<span class="note">${esc(h.note)}</span>` : ''}</div>`;
+    }).join('');
+    const label = `${MONTHS[d.getMonth()]} ${d.getDate()}${names.length ? ', ' + names.join(', ') : ''}${items.length ? `, ${items.length} hangout${items.length > 1 ? 's' : ''}` : ''}`;
+    html += `<div class="day ${other ? 'other' : ''} ${ds === today ? 'today' : ''} ${dow === 0 || dow === 6 ? 'weekend' : ''} ${placing ? 'placing' : ''}" data-date="${ds}" aria-label="${esc(label)}">
+      <div class="d-top"><span class="num">${d.getDate()}</span>${names.length ? `<span class="holdot" title="${esc(names.join(', '))}"></span><span class="hols">${names.slice(0, 2).map(n => `<span class="hol" title="${esc(n)}">${esc(n)}</span>`).join('')}</span>` : ''}</div>
+      <div class="chips">${chips}</div>
+    </div>`;
+  }
+  $('#calGrid').innerHTML = html;
+  // Holidays this month, as a line under the grid (the only place they show at phone width).
+  const prefix = `${y}-${pad(m + 1)}-`;
+  const monthHols = [...hols.entries()].filter(([d]) => d.startsWith(prefix)).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  $('#holList').innerHTML = monthHols.length
+    ? monthHols.map(([d, ns]) => `<b>${fmtShort(d)}</b> ${esc(ns.join(' · '))}`).join('<span class="sep">·</span>')
+    : 'No holidays this month.';
+}
+function renderTally() {
+  const y = state.view.y;
+  const today = todayISO();
+  const people = sortedPeople();
+  $('#tallyTitle').textContent = `${y} at a glance`;
+  const table = $('#tally');
+  if (!people.length) { table.innerHTML = ''; $('#tallyPanel').hidden = true; return; }
+  $('#tallyPanel').hidden = false;
+  let max = 1;
+  const rows = people.map(p => {
+    const cells = Array.from({ length: 12 }, () => ({ past: 0, planned: 0 }));
+    for (const h of state.hangouts.values()) {
+      if (h.personId !== p.id || !h.date.startsWith(y + '-')) continue;
+      const mi = Number(h.date.slice(5, 7)) - 1;
+      if (mi < 0 || mi > 11) continue;
+      if (h.date <= today) cells[mi].past++; else cells[mi].planned++;
+    }
+    for (const c of cells) max = Math.max(max, c.past);
+    const total = cells.reduce((a, c) => a + c.past, 0);
+    const plannedTotal = cells.reduce((a, c) => a + c.planned, 0);
+    const s = statsFor(p);
+    const goalYear = Math.round(s.goal * 365.25 / PERIOD_DAYS[s.period]);
+    return { p, cells, total, plannedTotal, goalYear };
+  });
+  const curM = now.getFullYear() === y ? now.getMonth() : -1;
+  table.innerHTML = `<thead><tr><th>Person</th>${MON.map((mn, i) => `<th class="${i === curM ? 'cur' : ''}">${mn}</th>`).join('')}<th>Total</th><th>Goal / yr</th></tr></thead>
+  <tbody>${rows.map(r => `<tr style="--h:${Number(r.p.hue) || 0}"><td><span class="dot"></span>${esc(r.p.name)}</td>${r.cells.map((c, i) => {
+    const a = c.past ? (0.3 + 0.7 * c.past / max).toFixed(2) : 0;
+    return `<td class="n ${i === curM ? 'cur' : ''}" style="--a:${a}">${c.past || ''}${c.planned ? `<small>+${c.planned}</small>` : ''}</td>`;
+  }).join('')}<td class="tot">${r.total}${r.plannedTotal ? `<small>+${r.plannedTotal}</small>` : ''}</td><td class="goal">${r.goalYear}</td></tr>`).join('')}</tbody>`;
+}
+function renderHint() {
+  const hint = $('#hint');
+  const p = state.selectedPerson ? state.people.get(state.selectedPerson) : null;
+  hint.hidden = !p;
+  if (p) $('#hintText').textContent = `Tap a day to log ${p.name}`;
+}
+
+// ---------- actions ----------
+function shiftMonth(n) { const d = new Date(state.view.y, state.view.m + n, 1); state.view = { y: d.getFullYear(), m: d.getMonth() }; renderAll(); }
+function selectPerson(id) { state.selectedPerson = state.selectedPerson === id ? null : id; renderAll(); }
+function logHangout(personId, date) {
+  const h = { personId, date, note: '', createdAt: Date.now() };
+  const id = uid();
+  store.set('hangouts', id, h);
+  return { id, ...h };
+}
+function moveHangout(id, date) {
+  const h = state.hangouts.get(id);
+  if (!h || h.date === date) return;
+  const { id: _omit, ...rest } = h;
+  store.set('hangouts', id, { ...rest, date });
+}
+async function deletePerson(id) {
+  const toDelete = [...state.hangouts.values()].filter(h => h.personId === id).map(h => h.id);
+  await store.del('people', id);
+  for (const hid of toDelete) await store.del('hangouts', hid);
+}
+
+// Two-step delete, since the viewer shows no confirm() dialogs.
+function disarm(btn, label) { btn.classList.remove('armed'); btn.textContent = label; }
+function armOrFire(btn, confirmLabel, fn) {
+  if (!btn.classList.contains('armed')) { btn.classList.add('armed'); btn.textContent = confirmLabel; return; }
+  fn();
+}
+
+// Hangout dialog
+let hState = null;
+function openHangoutDialog(h, mode) {
+  const people = sortedPeople();
+  if (!people.length) { toast('Add a person first.'); $('#addPerson').focus(); return; }
+  hState = { mode, id: h.id ?? null };
+  const sel = $('#hPerson');
+  sel.innerHTML = people.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  sel.value = h.personId && state.people.has(h.personId) ? h.personId : people[0].id;
+  $('#hDate').value = h.date;
+  $('#hNote').value = h.note || '';
+  const person = state.people.get(sel.value);
+  $('#hangoutTitle').textContent = mode === 'new' ? 'Log a hangout' : (h.date > todayISO() ? `Planned with ${person?.name ?? ''}` : `Hangout with ${person?.name ?? ''}`);
+  const del = $('#hDelete'); del.hidden = mode === 'new'; disarm(del, 'Delete');
+  $('#hangoutDialog').showModal();
+  $('#hNote').focus();
+}
+$('#hangoutForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const personId = $('#hPerson').value, date = $('#hDate').value, note = $('#hNote').value.trim();
+  if (!personId || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast('Pick a date.'); $('#hDate').focus(); return; }
+  const id = hState.id ?? uid();
+  const prev = state.hangouts.get(id);
+  store.set('hangouts', id, { personId, date, note, createdAt: prev?.createdAt ?? Date.now() });
+  $('#hangoutDialog').close();
+});
+$('#hCancel').addEventListener('click', () => $('#hangoutDialog').close());
+$('#hDelete').addEventListener('click', e => armOrFire(e.currentTarget, 'Yes, delete this', () => { if (hState?.id) store.del('hangouts', hState.id); $('#hangoutDialog').close(); }));
+
+// Person dialog
+let pState = null, pHue = HUES[0];
+function renderSwatches() {
+  $('#swatches').innerHTML = HUES.map(h => `<button type="button" class="swatch" role="radio" style="--h:${h}" data-hue="${h}" aria-checked="${h === pHue}" aria-label="Color ${h}"></button>`).join('');
+}
+function openPersonDialog(id) {
+  const p = id ? state.people.get(id) : null;
+  pState = { id: p ? id : null };
+  $('#personTitle').textContent = p ? `Edit ${p.name}` : 'Add a person';
+  $('#pName').value = p?.name ?? '';
+  $('#pCount').value = p?.goalCount ?? 2;
+  $('#pPeriod').value = PERIOD_DAYS[p?.goalPeriod] ? p.goalPeriod : 'month';
+  pHue = p?.hue ?? HUES[state.people.size % HUES.length];
+  renderSwatches();
+  const del = $('#pDelete'); del.hidden = !p; disarm(del, 'Delete');
+  $('#personDialog').showModal();
+  $('#pName').focus();
+}
+$('#swatches').addEventListener('click', e => { const b = e.target.closest('.swatch'); if (!b) return; pHue = Number(b.dataset.hue); renderSwatches(); });
+$('#personForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#pName').value.trim();
+  if (!name) { toast('Give them a name.'); $('#pName').focus(); return; }
+  const goalCount = Math.min(60, Math.max(1, Math.round(Number($('#pCount').value) || 1)));
+  const goalPeriod = $('#pPeriod').value;
+  const id = pState.id ?? uid();
+  const prev = state.people.get(id);
+  const data = { name, hue: pHue, goalCount, goalPeriod, createdAt: prev?.createdAt ?? Date.now() };
+  if (prev?.example) data.example = true;
+  store.set('people', id, data);
+  $('#personDialog').close();
+});
+$('#pCancel').addEventListener('click', () => $('#personDialog').close());
+$('#pDelete').addEventListener('click', e => {
+  const p = pState?.id ? state.people.get(pState.id) : null;
+  if (!p) return;
+  const n = [...state.hangouts.values()].filter(h => h.personId === p.id).length;
+  armOrFire(e.currentTarget, `Yes, delete ${p.name}${n ? ` and ${n} hangout${n > 1 ? 's' : ''}` : ''}`, () => { deletePerson(p.id); $('#personDialog').close(); });
+});
+
+// ---------- events ----------
+$('#prevMonth').addEventListener('click', () => shiftMonth(-1));
+$('#nextMonth').addEventListener('click', () => shiftMonth(1));
+$('#todayBtn').addEventListener('click', () => { state.view = { y: now.getFullYear(), m: now.getMonth() }; renderAll(); });
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea, dialog')) return;
+  if (e.key === 'ArrowLeft') shiftMonth(-1);
+  if (e.key === 'ArrowRight') shiftMonth(1);
+  if (e.key === 'Escape' && state.selectedPerson) { state.selectedPerson = null; renderAll(); }
+});
+$('#holMenu').addEventListener('change', e => {
+  const cb = e.target.closest('input[data-group]'); if (!cb) return;
+  state.holidayPrefs[cb.dataset.group] = cb.checked;
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(state.holidayPrefs)); } catch (err) {}
+  renderCalendar();
+});
+document.addEventListener('click', e => { const menu = $('#holMenu'); if (menu.open && !menu.contains(e.target)) menu.open = false; });
+$('#addPerson').addEventListener('click', () => openPersonDialog(null));
+$('#rail').addEventListener('click', e => {
+  if (e.target.closest('#railAdd')) { openPersonDialog(null); return; }
+  const chip = e.target.closest('.railchip'); if (chip) selectPerson(chip.dataset.id);
+});
+$('#hintDone').addEventListener('click', () => { state.selectedPerson = null; renderAll(); });
+$('#removeExamples').addEventListener('click', async e => {
+  const ids = [...state.people.values()].filter(p => p.example).map(p => p.id);
+  e.currentTarget.disabled = true;
+  for (const id of ids) await deletePerson(id);
+  toast('Examples removed. Add your own people.');
+});
+$('#peopleList').addEventListener('click', e => {
+  const li = e.target.closest('.person'); if (!li) return;
+  if (e.target.closest('.edit')) { openPersonDialog(li.dataset.id); return; }
+  selectPerson(li.dataset.id);
+});
+// Keyboard: Enter/Space on role=button divs
+for (const sel of ['#peopleList', '#rail', '#calGrid']) $(sel).addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target.closest('[role="button"]'); if (!t) return;
+  e.preventDefault(); t.click();
+});
+
+// Drag and drop (desktop); tap-to-place covers touch screens.
+let dragPayload = null, overCell = null;
+function clearOver() { if (overCell) overCell.classList.remove('over'); overCell = null; }
+function onDragStart(e, payload) {
+  dragPayload = payload;
+  try { e.dataTransfer.setData('text/plain', payload); e.dataTransfer.effectAllowed = payload.startsWith('person:') ? 'copy' : 'move'; } catch (err) {}
+  e.target.classList.add('dragging');
+}
+$('#peopleList').addEventListener('dragstart', e => { const li = e.target.closest('.person'); if (li) onDragStart(e, 'person:' + li.dataset.id); });
+$('#rail').addEventListener('dragstart', e => { const c = e.target.closest('.railchip'); if (c) onDragStart(e, 'person:' + c.dataset.id); });
+$('#calGrid').addEventListener('dragstart', e => { const c = e.target.closest('.chip'); if (c) { e.stopPropagation(); onDragStart(e, 'hangout:' + c.dataset.id); } });
+document.addEventListener('dragend', e => { dragPayload = null; clearOver(); for (const el of document.querySelectorAll('.dragging')) el.classList.remove('dragging'); });
+$('#calGrid').addEventListener('dragover', e => {
+  const cell = e.target.closest('.day'); if (!cell) return;
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = dragPayload?.startsWith('hangout:') ? 'move' : 'copy'; } catch (err) {}
+  if (cell !== overCell) { clearOver(); overCell = cell; cell.classList.add('over'); }
+});
+$('#calGrid').addEventListener('dragleave', e => { if (!e.relatedTarget || !$('#calGrid').contains(e.relatedTarget)) clearOver(); });
+$('#calGrid').addEventListener('drop', e => {
+  const cell = e.target.closest('.day'); if (!cell) return;
+  e.preventDefault();
+  let payload = dragPayload;
+  try { payload = e.dataTransfer.getData('text/plain') || payload; } catch (err) {}
+  clearOver(); dragPayload = null;
+  if (!payload) return;
+  const [kind, id] = payload.split(':');
+  const date = cell.dataset.date;
+  if (kind === 'person' && state.people.has(id)) { const h = logHangout(id, date); openHangoutDialog(h, 'edit'); }
+  else if (kind === 'hangout' && state.hangouts.has(id)) moveHangout(id, date);
+});
+$('#calGrid').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (chip) { const h = state.hangouts.get(chip.dataset.id); if (h) openHangoutDialog(h, 'edit'); return; }
+  const cell = e.target.closest('.day'); if (!cell) return;
+  const date = cell.dataset.date;
+  if (state.selectedPerson && state.people.has(state.selectedPerson)) { const h = logHangout(state.selectedPerson, date); openHangoutDialog(h, 'edit'); return; }
+  openHangoutDialog({ personId: null, date, note: '' }, 'new');
+});
+
+// ---------- go ----------
+renderAll();
+store.init();
+})();
+</script>
+</body>
+</html>
