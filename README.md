@@ -2,7 +2,7 @@
 
 A small web app for keeping up with friends and family. Drag a name onto a monthly calendar to log a hangout, note what you did, set a goal for how often you want to see each person, and plan around holidays.
 
-Live at **https://social.thebubble.io**
+Live at **https://social.thebubble.ai**
 
 ## How it works
 
@@ -14,7 +14,7 @@ Live at **https://social.thebubble.io**
 
 ## Where the data lives
 
-This is a single static page with no backend. On social.thebubble.io, your people and hangouts are saved in the browser's `localStorage`, so they stay on the device and browser you used. Clearing site data clears them.
+This is a single static page with no backend. On social.thebubble.ai, your people and hangouts are saved in the browser's `localStorage`, so they stay on the device and browser you used. Clearing site data clears them.
 
 The same page also runs as a Claude Artifact, where it uses the artifact's synced database instead, so data follows you across devices.
 
